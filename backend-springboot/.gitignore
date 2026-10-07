@@ -3,3 +3,11 @@ target/
 *.iml
 logs/
 .env
+.env.*
+!.env.example
+private/
+secrets/
+*.pem
+*.crt
+*.cer
+*.key

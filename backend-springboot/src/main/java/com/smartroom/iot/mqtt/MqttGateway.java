@@ -31,20 +31,16 @@ public class MqttGateway implements CommandPublisher, MqttCallbackExtended {
     private volatile boolean closing;
 
     public MqttGateway(MqttIngress ingress, ObjectMapper mapper,
-            @Value("${smartroom.mqtt.uri}") String uri,
+            @Value("${smartroom.mqtt.broker-url}") String uri,
             @Value("${smartroom.mqtt.client-id}") String clientId,
-            @Value("${smartroom.mqtt.publish-timeout-ms}") long publishTimeoutMs) throws MqttException {
+            @Value("${smartroom.mqtt.publish-timeout-ms}") long publishTimeoutMs,
+            MqttConnectOptions options) throws MqttException {
         this.ingress = ingress;
         this.mapper = mapper;
         this.publishTimeoutMs = publishTimeoutMs;
         this.client = new MqttAsyncClient(uri, clientId, new MemoryPersistence());
         this.client.setCallback(this);
-        this.options = new MqttConnectOptions();
-        this.options.setCleanSession(true);
-        // A single scheduled retry path handles both initial failure and later disconnections.
-        this.options.setAutomaticReconnect(false);
-        this.options.setConnectionTimeout(5);
-        this.options.setKeepAliveInterval(20);
+        this.options = options;
     }
 
     @Scheduled(fixedDelayString = "${smartroom.mqtt.reconnect-delay-ms}")

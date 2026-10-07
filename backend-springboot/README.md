@@ -30,11 +30,21 @@ Maven Wrapper tự tải Maven ở lần chạy đầu; cần Internet để t�
 | `DB_URL` | `jdbc:postgresql://localhost:5433/smartroom_iot` |
 | `DB_USERNAME` | `smartroom` |
 | `DB_PASSWORD` | Bắt buộc cấu hình; không có mật khẩu mặc định trong source |
-| `MQTT_URI` | `tcp://192.168.130.174:1883` |
+| `MQTT_BROKER_URL` | `MQTT_URI` cũ, hoặc `tcp://192.168.130.174:1883` |
 | `MQTT_CLIENT_ID` | `smartroom-backend` |
+| `MQTT_USERNAME` | Rỗng: local anonymous |
+| `MQTT_PASSWORD` | Rỗng: không gửi password |
+| `MQTT_TLS_ENABLED` | `false`; cloud đặt `true` và URL `ssl://` |
+| `MQTT_CA_PATH` | Rỗng: JVM trust store; có thể dùng đường dẫn, `file:` URI hoặc `classpath:` resource |
 | `CORS_ORIGIN` | `http://localhost:5173` |
 
 Ví dụ đổi port: `$env:SERVER_PORT = '8081'` rồi chạy lại backend.
+
+`backend-springboot/.env.example` liệt kê cấu hình đầy đủ. Giữ root `.env` đang hoạt động; nếu tạo thêm backend `.env`, giá trị trong file này ghi đè root khi chạy từ thư mục backend, kể cả `DB_PASSWORD=` rỗng. Khi chạy từ root chỉ root `.env` được đọc trong bố cục hiện tại. Production nên dùng environment của nền tảng, không phụ thuộc working directory.
+
+`MQTT_BROKER_URL` ưu tiên hơn `MQTT_URI` để tương thích cấu hình cũ. URL backend phải là `tcp://host:port` khi TLS tắt hoặc `ssl://host:port` khi TLS bật (Paho không dùng scheme ESP-IDF `mqtts://`). Sai scheme/TLS, credential nhúng trong URL, password không có username hoặc CA với TLS tắt sẽ bị từ chối ngay lúc khởi tạo. Java source không có broker local hard-code.
+
+TLS dùng trust manager chuẩn JSSE và bật Paho HTTPS endpoint identification để xác minh hostname; không có trust-all hay verifier bỏ qua lỗi. `MQTT_CA_PATH` rỗng dùng JVM trust store; nếu chỉ định thì nạp CA X.509 PEM/DER vào trust store riêng, **thay thế** bộ trust root mặc định cho kết nối MQTT. File CA phải tồn tại, có CA certificate còn hạn; lỗi sẽ làm startup fail, không fallback về TCP. Nên mount CA tại đường dẫn tuyệt đối ngoài source; `classpath:` dành cho CA công khai đã được kiểm duyệt. Không hỗ trợ client certificate/mTLS trong bước này. Xem [quy trình cloud](../docs/production-deployment.md).
 
 `spring.jpa.hibernate.ddl-auto=validate`: chỉ kiểm tra mapping, không tạo/sửa/drop bảng. Không dùng H2 hay database thay thế. PostgreSQL phải đang chạy trước khi khởi động backend.
 
@@ -100,7 +110,7 @@ iot/smartroom/+/state
 iot/smartroom/+/status
 ```
 
-Một scheduled task thử kết nối lại mỗi 5 giây khi mất kết nối hoặc lần đầu không thành công. Kết nối có timeout 5 giây. Mỗi lần kết nối thành công đều subscribe lại và kiểm tra SUBACK; subscribe lỗi cũng được thử lại. Broker không cần username/password.
+Một scheduled task thử kết nối lại mỗi 5 giây khi mất kết nối hoặc lần đầu không thành công. Kết nối có timeout 5 giây. Mỗi lần kết nối thành công đều subscribe lại và kiểm tra SUBACK; subscribe lỗi cũng được thử lại. Broker local hiện không cần username/password; cloud đọc credential từ môi trường.
 
 Payload phải là JSON, `deviceId` phải trùng device trên topic; enum và khoảng đo DHT22 được validate. Payload sai bị log/reject và không làm ngắt MQTT. Telemetry hợp lệ cập nhật `ONLINE`, `lastSeen`, tạo device nếu chưa có và insert sample trong cùng transaction. JSON `fan` map sang `fan_state`, `light` map sang `light_output_state`.
 
@@ -124,6 +134,8 @@ Publish tới `iot/smartroom/{deviceId}/command` với đúng payload `{"device"
 
 `mvnw.cmd verify` chạy unit/MVC tests bằng repository và MQTT mocks: ngưỡng nhiệt độ/hysteresis/dedup, publish thành công/thất bại, presence cutoff, state fallback, payload không hợp lệ, HTTP errors và CORS. Không insert telemetry giả vào PostgreSQL và không dùng database giả. Kết nối JPA/PostgreSQL và luồng phần cứng được kiểm tra riêng bằng backend đang chạy, MQTT observation và REST.
 
+Tests bổ sung kiểm tra local anonymous, chuyển credential nguyên vẹn, fail-fast cấu hình TLS và reconnect/re-subscribe. TLS handshake chạy thật qua Paho trên loopback với identity tự sinh trong temp directory: CA đúng/hostname đúng được chấp nhận, CA không tin cậy hoặc hostname sai bị từ chối. Không cần cloud broker; không kết nối PostgreSQL/EMQX trong tests này. Cần JDK 17 đầy đủ có `keytool`; private key test không được lưu vào source.
+
 Log build: `target/build-verification.log`. Log phiên chạy kiểm thử: `target/backend.log`, `target/backend-error.log`.
 
-Dependencies chính: Spring Web (bao gồm Jackson), Spring Data JPA, PostgreSQL JDBC, Validation, Eclipse Paho MQTT 1.2.5; JUnit 5/Mockito/MockMvc qua Spring Boot Starter Test. Authentication và frontend được triển khai ở bước sau.
+Dependencies chính: Spring Web (bao gồm Jackson), Spring Data JPA, PostgreSQL JDBC, Validation, Eclipse Paho MQTT 1.2.5; JUnit 5/Mockito/MockMvc qua Spring Boot Starter Test. Frontend nằm tại `../frontend-react`. MQTT credential không bổ sung authentication cho REST API.

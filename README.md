@@ -26,7 +26,7 @@ notepad .env
 
 Điền `DB_PASSWORD` bằng mật khẩu **đang dùng** cho PostgreSQL. Docker Compose và backend cùng đọc giá trị này. Không đổi mật khẩu của database hiện có: đặt biến môi trường không tự cập nhật mật khẩu đã lưu trong volume. Backend đọc `.env` từ root hoặc thư mục cha khi chạy trong `backend-springboot`; biến môi trường hệ điều hành có độ ưu tiên cao hơn.
 
-Backend mặc định dùng PostgreSQL `localhost:5433`, database `smartroom_iot`, user `smartroom`, MQTT `tcp://192.168.130.174:1883`, CORS `http://localhost:5173`. Có thể đổi bằng `DB_URL`, `DB_USERNAME`, `MQTT_URI`, `CORS_ORIGIN` trong môi trường hoặc root `.env`. Không ghi credential vào source hay URL MQTT.
+Backend mặc định dùng PostgreSQL `localhost:5433`, database `smartroom_iot`, user `smartroom`, MQTT `tcp://192.168.130.174:1883`, CORS `http://localhost:5173`. Có thể đổi bằng `DB_URL`, `DB_USERNAME`, `MQTT_BROKER_URL`, `CORS_ORIGIN` trong môi trường hoặc root `.env`. `MQTT_URI` cũ vẫn được dùng khi chưa đặt `MQTT_BROKER_URL`. Không ghi credential vào source hay URL MQTT.
 
 Không cần tạo lại database/EMQX đang chạy. Với máy mới, có thể dùng `docker compose up -d postgres`; `database/init.sql` chỉ chạy khi volume database còn trống. Không chạy `docker compose down -v` trên dữ liệu cần giữ.
 
@@ -58,3 +58,7 @@ Backend tests dùng mocks, không ghi telemetry giả hay thay đổi PostgreSQL
 Root `.gitignore` loại `.env` và các biến thể, private key/keystore, credential directory, IDE metadata, log, database dump, `node_modules/`, Maven `target/`, Vite `dist/`, TypeScript build cache và `.vercel/`. `.env.example`, Maven Wrapper và npm lockfile được commit. File example chỉ chứa placeholder hoặc URL công khai. Không dùng `git add -f` để đưa cấu hình local vào Git.
 
 Frontend `VITE_*` được nhúng vào bundle công khai; chỉ đặt `VITE_API_BASE_URL`, không đặt secret. Vercel dùng Root Directory `frontend-react`, Build Command `npm run build`, Output Directory `dist`; đổi `VITE_API_BASE_URL` thành backend HTTPS và cấu hình `CORS_ORIGIN` tương ứng trước khi triển khai. SPA fallback đã có trong `frontend-react/vercel.json`.
+
+## Chuẩn bị MQTT Cloud
+
+Backend hỗ trợ MQTT username/password, `ssl://` với xác minh certificate/hostname và CA tùy chọn; local vẫn mặc định TCP không credential. Chưa chuyển runtime hoặc cung cấp cloud host/credential. Xem [hướng dẫn production và migration firmware](docs/production-deployment.md) cùng `backend-springboot/.env.example`. Không copy file example đè cấu hình local đang dùng.

@@ -63,3 +63,10 @@ emqx_log/
 
 # Original course handout contains example broker credentials; retain locally
 /BaiTap_IoT_v31.docx
+
+# ESP-IDF generated configuration/output and device-local credentials
+/firmware-esp32/build/
+/firmware-esp32/sdkconfig
+/firmware-esp32/sdkconfig.old
+/firmware-esp32/main/secrets.h
+/firmware-esp32/managed_components/

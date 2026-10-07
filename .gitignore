@@ -1,0 +1,62 @@
+# Local environment and secrets (examples are safe to publish)
+.env
+.env.*
+!.env.example
+*.local
+secrets/
+credentials/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+.npmrc
+settings.xml
+application-local.yml
+application-local.yaml
+application-local.properties
+
+# Dependencies and generated build output
+node_modules/
+target/
+dist/
+build/
+out/
+.vite/
+.cache/
+.vercel/
+coverage/
+*.tsbuildinfo
+*.class
+*.jar
+*.war
+
+# IDE and operating system files
+.idea/
+.vscode/
+.settings/
+.classpath
+.project
+*.iml
+*.ipr
+*.iws
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# Logs, database dumps and local runtime data
+logs/
+*.log
+*.dump
+*.backup
+postgres_data/
+pgdata/
+emqx_data/
+emqx_log/
+
+# Original course handout contains example broker credentials; retain locally
+/BaiTap_IoT_v31.docx
